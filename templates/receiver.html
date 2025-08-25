@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureChat - Receiver Panel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4834d4 0%, #686de0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .connection-status {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .connected {
+            color: #25d366;
+        }
+
+        .disconnected {
+            color: #e74c3c;
+        }
+
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(45deg, #4834d4, #686de0);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .chat-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .messages-area {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #e5ddd5;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(120, 120, 120, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(120, 120, 120, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 120, 120, 0.05) 0%, transparent 50%);
+        }
+
+        .message {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .message-sender {
+            justify-content: flex-start;
+        }
+
+        .message-sender .message-bubble {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-receiver {
+            justify-content: flex-end;
+        }
+
+        .message-receiver .message-bubble {
+            background: #dcf8c6;
+            color: #333;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .message-time {
+            opacity: 0.7;
+        }
+
+        .message-status {
+            opacity: 0.6;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .sender-avatar {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+
+        .receiver-avatar {
+            background: linear-gradient(45deg, #4834d4, #686de0);
+        }
+
+        .input-area {
+            padding: 20px;
+            background: #f0f0f0;
+            border-top: 1px solid #ddd;
+        }
+
+        .input-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+            resize: none;
+            max-height: 100px;
+            min-height: 44px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .message-input:focus {
+            border-color: #4834d4;
+        }
+
+        .send-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: #4834d4;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover {
+            background: #686de0;
+            transform: translateY(-1px);
+        }
+
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .encryption-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .key-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            font-size: 12px;
+            font-family: monospace;
+            background: white;
+        }
+
+        .key-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            background: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .key-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .encryption-status {
+            background: linear-gradient(45deg, #ffeaa7, #fdcb6e);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .encryption-status h3 {
+            margin-bottom: 8px;
+            color: #2d3436;
+            font-size: 14px;
+        }
+
+        .key-display {
+            font-family: monospace;
+            background: rgba(255,255,255,0.7);
+            padding: 8px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-size: 11px;
+        }
+
+        .encrypted-preview {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            display: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            font-style: italic;
+            color: #666;
+            padding: 10px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .message-bubble {
+                max-width: 85%;
+            }
+
+            .input-controls {
+                flex-direction: column;
+            }
+
+            .encryption-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 SecureChat - Receiver Panel</h1>
+            <p>Receive and respond to encrypted messages</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="connection-status disconnected" id="connectionStatus">
+                🔴 Disconnected from server
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>💬 Secure Conversation</h2>
+                <p>You are responding as: <strong>Receiver</strong></p>
+            </div>
+
+            <div class="messages-area" id="messagesArea">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                Sender is typing...
+            </div>
+
+            <div class="input-area">
+                <div class="input-controls">
+                    <textarea 
+                        class="message-input" 
+                        id="messageInput" 
+                        placeholder="Type your response here..."
+                        rows="1"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        📤 Send
+                    </button>
+                </div>
+
+                <div class="encryption-controls">
+                    <input 
+                        type="text" 
+                        class="key-input" 
+                        id="encryptionKey" 
+                        placeholder="Encryption key (auto-generated if empty)"
+                    >
+                    <button class="key-btn" onclick="generateKey()">🔑 Generate</button>
+                </div>
+
+                <div class="encrypted-preview" id="encryptedPreview">
+                    <strong>Encrypted:</strong> <span id="encryptedText"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="encryption-status">
+            <h3>🛡 Session Encryption Key</h3>
+            <div class="key-display" id="sessionKeyDisplay">Connecting to server...</div>
+        </div>
+    </div>
+
+    <script>
+        let socket;
+        let sessionKey = '';
+        let isConnected = false;
+
+        // Initialize socket connection
+        function initSocket() {
+            socket = io();
+            
+            socket.on('connect', function() {
+                isConnected = true;
+                updateConnectionStatus(true);
+                socket.emit('join_as_user', {user_type: 'receiver'});
+                generateKey();
+            });
+
+            socket.on('disconnect', function() {
+                isConnected = false;
+                updateConnectionStatus(false);
+            });
+
+            socket.on('receive_message', function(data) {
+                if (data.sender !== 'receiver') {
+                    addMessageToChat(data.text, 'sender', data.timestamp);
+                }
+            });
+
+            socket.on('message_sent', function(data) {
+                addMessageToChat(data.text, 'receiver', data.timestamp, data.status);
+            });
+
+            socket.on('key_generated', function(data) {
+                sessionKey = data.key;
+                document.getElementById('encryptionKey').value = sessionKey;
+                document.getElementById('sessionKeyDisplay').textContent = sessionKey;
+            });
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (connected) {
+                statusEl.textContent = '🟢 Connected to server';
+                statusEl.className = 'connection-status connected';
+            } else {
+                statusEl.textContent = '🔴 Disconnected from server';
+                statusEl.className = 'connection-status disconnected';
+            }
+        }
+
+        // Simple encryption function
+        function simpleEncrypt(text, key) {
+            if (!key) return text;
+            const shift = key.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 26;
+            return text.split('').map(char => {
+                if (char.match(/[a-z]/i)) {
+                    const code = char.charCodeAt(0);
+                    const base = code >= 65 && code <= 90 ? 65 : 97;
+                    return String.fromCharCode(((code - base + shift) % 26) + base);
+                }
+                return char;
+            }).join('');
+        }
+
+        function generateKey() {
+            if (isConnected) {
+                socket.emit('generate_key');
+            } else {
+                const key = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                sessionKey = key;
+                document.getElementById('encryptionKey').value = key;
+                document.getElementById('sessionKeyDisplay').textContent = key;
+            }
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const keyInput = document.getElementById('encryptionKey');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                alert('Please enter a message.');
+                return;
+            }
+
+            if (!isConnected) {
+                alert('Not connected to server. Please wait for connection.');
+                return;
+            }
+
+            let key = keyInput.value.trim() || sessionKey;
+            
+            // Show encryption preview
+            const encryptedMessage = simpleEncrypt(message, key);
+            document.getElementById('encryptedText').textContent = encryptedMessage;
+            document.getElementById('encryptedPreview').style.display = 'block';
+
+            // Send message via socket
+            socket.emit('send_message', {
+                message: message,
+                sender: 'receiver',
+                encrypted_text: encryptedMessage
+            });
+
+            // Hide preview and clear input
+            setTimeout(() => {
+                document.getElementById('encryptedPreview').style.display = 'none';
+                messageInput.value = '';
+                messageInput.focus();
+            }, 1500);
+        }
+
+        function addMessageToChat(message, sender, timestamp, status = 'delivered') {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${sender}`;
+            
+            const time = timestamp || new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const statusIcon = status === 'delivered' ? '✓' : '⏳';
+            
+            messageDiv.innerHTML = `
+                <div class="user-avatar ${sender}-avatar">
+                    ${sender === 'sender' ? 'S' : 'R'}
+                </div>
+                <div class="message-bubble">
+                    <div class="message-text">${message}</div>
+                    <div class="message-info">
+                        <span class="message-time">${time}</span>
+                        <span class="message-status">🔓 Decrypted ${statusIcon}</span>
+                    </div>
+                </div>
+            `;
+            
+            messagesArea.appendChild(messageDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        // Auto-resize textarea
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        // Send on Enter
+        document.getElementById('messageInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Initialize on page load
+        window.onload = function() {
+            initSocket();
+            document.getElementById('messageInput').focus();
+        };
+    </script>
+</body>
+</html>
