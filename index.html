@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SecureChat - Home</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #4834d4, #ff6b6b);
+      margin: 0;
+    }
+    .container {
+      text-align: center;
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    a {
+      display: inline-block;
+      margin: 10px;
+      padding: 12px 25px;
+      border-radius: 10px;
+      font-weight: bold;
+      text-decoration: none;
+      color: white;
+      transition: 0.3s;
+    }
+    .sender {
+      background: #ff6b6b;
+    }
+    .sender:hover {
+      background: #ee5a24;
+    }
+    .receiver {
+      background: #4834d4;
+    }
+    .receiver:hover {
+      background: #686de0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 SecureChat</h1>
+    <p>Choose your role to start chatting securely:</p>
+    <a href="/sender" class="sender">🚀 Sender Panel</a>
+    <a href="/receiver" class="receiver">📥 Receiver Panel</a>
+  </div>
+</body>
+</html>
